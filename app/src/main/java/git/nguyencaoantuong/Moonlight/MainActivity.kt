@@ -122,6 +122,9 @@ fun KernelStatus() {
     val kernelVersion = System.getProperty("os.version") ?: "universe"
 
     val (text, color, textColor) = when {
+        kernelVersion.contains("rc1-vigus", ignoreCase = true) -> Triple("vigus", Color.DarkGray, Color.White)
+        kernelVersion.contains("yuki", ignoreCase = true) -> Triple("yuki", Color.DarkGray, Color.White)
+        kernelVersion.contains("vampire", ignoreCase = true) -> Triple("vampire", Color.DarkGray, Color.White)
         kernelVersion.contains("moonlight", ignoreCase = true) -> Triple("Moonlight", Color.DarkGray, Color.White)
         kernelVersion.contains("helium", ignoreCase = true) -> Triple("h*", Color(0xFF42A5F5), Color.White)
         kernelVersion.contains("experience", ignoreCase = true) -> Triple("exp", Color(0xFFFFCA28), Color.Black)
@@ -288,7 +291,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, theme: MutableState<Theme>, la
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { 
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://youtu.be/zaUrFJ3y_D8?si=xK4cQjKen8z6nVWN"))
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://youtu.be/V61jZBMFjUs?si=mGFYyU4Y8XE1kZ4K"))
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     context.startActivity(intent)
                 },
@@ -296,7 +299,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, theme: MutableState<Theme>, la
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(text = "Moonlight", fontWeight = FontWeight.Bold)
-                Text(text = "Version $versionName", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = "ver. $versionName", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

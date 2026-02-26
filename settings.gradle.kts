@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Moonlight"
+rootProject.name = "noonium"
 include(":app")

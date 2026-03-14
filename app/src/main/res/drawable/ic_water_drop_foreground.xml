@@ -1,0 +1,12 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Centered water drop for adaptive icon -->
+    <!-- Using hex color to avoid XML theme resolution issues -->
+    <!-- The Monochrome layer in adaptive-icon will still enable Monet/Themed Icons -->
+    <path
+        android:fillColor="#2196F3"
+        android:pathData="M54,24.1C54,24.1 31.5,49.03 31.5,67.89C31.5,79.99 41.62,89.8 54,89.8C66.38,89.8 76.5,79.99 76.5,67.89C76.5,49.03 54,24.1 54,24.1Z" />
+</vector>

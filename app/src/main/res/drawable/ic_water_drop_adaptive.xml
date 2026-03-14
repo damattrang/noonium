@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Base Drop Shape -->
+    <path
+        android:fillColor="?attr/colorPrimary"
+        android:pathData="M12,2.69C12,2.69 7,8.23 7,12.42C7,15.11 9.25,17.29 12,17.29C14.75,17.29 17,15.11 17,12.42C17,8.23 12,2.69 12,2.69Z" />
+
+    <!-- Inner Accent/Reflection -->
+    <path
+        android:fillColor="?attr/colorOnPrimary"
+        android:fillAlpha="0.3"
+        android:pathData="M12,17.29C14.75,17.29 17,15.11 17,12.42C17,11.23 16.5,9.88 15.75,8.5C14.5,10 13.5,12 12,12C10.5,12 9.5,10 8.25,8.5C7.5,9.88 7,11.23 7,12.42C7,15.11 9.25,17.29 12,17.29Z" />
+
+    <!-- Top Highlight -->
+    <path
+        android:fillColor="?attr/colorOnPrimary"
+        android:fillAlpha="0.5"
+        android:pathData="M12,5.5C12,5.5 13,8 13,10C13,10.55 12.55,11 12,11C11.45,11 11,10.55 11,10C11,8 12,5.5 12,5.5Z" />
+</vector>

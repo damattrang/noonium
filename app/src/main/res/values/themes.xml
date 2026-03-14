@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-
-    <style name="Theme.noonium" parent="android:Theme.Material.Light.NoActionBar" />
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Use a system theme that definitely exists to avoid resolve issues -->
+    <style name="Theme.HydrateLabs" parent="android:Theme.Material.NoActionBar">
+        <!-- Manual fallback for Material3 attributes if they fail to resolve in XML -->
+        <!-- These will be overridden by the Compose theme at runtime anyway -->
+    </style>
 </resources>

@@ -44,9 +44,7 @@ import androidx.compose.material.icons.outlined.ManageAccounts
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.MusicNote
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircleOutline
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Tune
@@ -89,7 +87,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import com.hydrate.labs.ui.theme.hydrateTheme
+import com.hydrate.labs.ui.theme.HydrateTheme
 import com.hydrate.labs.ui.theme.Theme
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -110,8 +108,8 @@ class MainActivity : ComponentActivity() {
             }
 
             CompositionLocalProvider(LocalContext provides createLocaleContext(language.value)) {
-                hydrateTheme(theme = theme.value) {
-                    hydrateApp(theme, language, rootGranted)
+                HydrateTheme(theme = theme.value) {
+                    HydrateApp(theme, language, rootGranted)
                 }
             }
         }
@@ -140,7 +138,7 @@ fun createLocaleContext(language: String): Context {
 }
 
 @Composable
-fun hydrateApp(theme: MutableState<Theme>, language: MutableState<String>, isRootGranted: Boolean) {
+fun HydrateApp(theme: MutableState<Theme>, language: MutableState<String>, isRootGranted: Boolean) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     val isDark = isDark(theme.value)
 
@@ -148,7 +146,7 @@ fun hydrateApp(theme: MutableState<Theme>, language: MutableState<String>, isRoo
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            // Floating Bottom Navigation Bar (One UI 8 Style Concept)
+            // Floating Bottom Navigation Bar
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -156,7 +154,7 @@ fun hydrateApp(theme: MutableState<Theme>, language: MutableState<String>, isRoo
             ) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(32.dp),
+                    shape = RoundedCornerShape(16.dp),
                     color = if (isDark) Color(0xFF2D2F31).copy(alpha = 0.92f) else Color.White.copy(alpha = 0.92f),
                     tonalElevation = 8.dp,
                     shadowElevation = 16.dp
@@ -164,7 +162,7 @@ fun hydrateApp(theme: MutableState<Theme>, language: MutableState<String>, isRoo
                     NavigationBar(
                         containerColor = Color.Transparent,
                         tonalElevation = 0.dp,
-                        modifier = Modifier.height(72.dp)
+                        modifier = Modifier.height(64.dp)
                     ) {
                         AppDestinations.entries.forEach { destination ->
                             if (!destination.requiresRoot || isRootGranted) {
@@ -179,19 +177,11 @@ fun hydrateApp(theme: MutableState<Theme>, language: MutableState<String>, isRoo
                                             modifier = Modifier.size(26.dp)
                                         )
                                     },
-                                    label = {
-                                        Text(
-                                            text = stringResource(id = destination.label),
-                                            fontSize = 12.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                        )
-                                    },
+                                    alwaysShowLabel = false,
                                     colors = NavigationBarItemDefaults.colors(
                                         selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = Color.Transparent, // Clean floating look
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                        indicatorColor = Color.Transparent,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                     )
                                 )
                             }
@@ -230,7 +220,6 @@ fun HomeScreen(theme: Theme) {
     val headerIconBoxColor = if (isDark) Color(0xFF303440) else Color(0xFFC5CAE9)
     val headerIconColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF3F51B5)
     val textColor = if (isDark) Color.White else Color.Black
-    val subTextColor = if (isDark) Color.LightGray else Color.DarkGray
     val innerCardColor = if (isDark) Color(0xFF24292E) else Color.White
     val dividerColor = if (isDark) Color.White.copy(alpha = 0.1f) else Color.LightGray.copy(alpha = 0.4f)
     val versionTextColor = if (isDark) Color(0xFF64B5F6) else Color(0xFF1976D2)
@@ -451,12 +440,12 @@ fun SettingsScreen(modifier: Modifier = Modifier, theme: MutableState<Theme>, la
                 Text(stringResource(id = R.string.theme), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Box {
                     Row(modifier = Modifier.fillMaxWidth().clickable { themeExpanded = true }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(ThemeName(theme.value), modifier = Modifier.weight(1f))
+                        Text(themeName(theme.value), modifier = Modifier.weight(1f))
                         Icon(Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
                     }
                     DropdownMenu(expanded = themeExpanded, onDismissRequest = { themeExpanded = false }) {
                         Theme.entries.forEach { themeValue ->
-                            DropdownMenuItem(text = { Text(ThemeName(themeValue)) }, onClick = { 
+                            DropdownMenuItem(text = { Text(themeName(themeValue)) }, onClick = { 
                                 theme.value = themeValue
                                 sharedPref.edit().putString("theme", themeValue.name).apply()
                                 themeExpanded = false
@@ -510,7 +499,7 @@ fun isDark(theme: Theme): Boolean {
 }
 
 @Composable
-fun ThemeName(theme: Theme): String {
+fun themeName(theme: Theme): String {
     return when (theme) {
         Theme.LIGHT -> stringResource(id = R.string.theme_light)
         Theme.DARK -> stringResource(id = R.string.theme_dark)
@@ -532,7 +521,7 @@ enum class AppDestinations(
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
-    hydrateTheme {
+    HydrateTheme {
         HomeScreen(Theme.SYSTEM)
     }
 }

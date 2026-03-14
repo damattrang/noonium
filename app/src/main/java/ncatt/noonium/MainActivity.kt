@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.outlined.BatteryFull
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Devices
+import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
@@ -43,7 +44,6 @@ import androidx.compose.material.icons.outlined.ManageAccounts
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.MusicNote
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircleOutline
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Speed
@@ -57,15 +57,19 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -82,6 +86,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import ncatt.noonium.ui.theme.nooniumTheme
 import ncatt.noonium.ui.theme.Theme
@@ -136,33 +141,71 @@ fun createLocaleContext(language: String): Context {
 @Composable
 fun nooniumApp(theme: MutableState<Theme>, language: MutableState<String>, isRootGranted: Boolean) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
+    val isDark = isDark(theme.value)
 
-    NavigationSuiteScaffold(
-        navigationSuiteItems = {
-            AppDestinations.entries.forEach { destination ->
-                // Only show Tweaks if root is granted
-                if (!destination.requiresRoot || isRootGranted) {
-                    item(
-                        icon = { Icon(destination.icon, contentDescription = stringResource(id = destination.label)) },
-                        label = { Text(stringResource(id = destination.label)) },
-                        selected = destination == currentDestination,
-                        onClick = { currentDestination = destination }
-                    )
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            // Floating Bottom Navigation Bar (One UI 8 Style Concept)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 24.dp)
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(32.dp),
+                    color = if (isDark) Color(0xFF2D2F31).copy(alpha = 0.92f) else Color.White.copy(alpha = 0.92f),
+                    tonalElevation = 8.dp,
+                    shadowElevation = 16.dp
+                ) {
+                    NavigationBar(
+                        containerColor = Color.Transparent,
+                        tonalElevation = 0.dp,
+                        modifier = Modifier.height(72.dp)
+                    ) {
+                        AppDestinations.entries.forEach { destination ->
+                            if (!destination.requiresRoot || isRootGranted) {
+                                val isSelected = destination == currentDestination
+                                NavigationBarItem(
+                                    selected = isSelected,
+                                    onClick = { currentDestination = destination },
+                                    icon = {
+                                        Icon(
+                                            imageVector = destination.icon,
+                                            contentDescription = stringResource(id = destination.label),
+                                            modifier = Modifier.size(26.dp)
+                                        )
+                                    },
+                                    label = {
+                                        Text(
+                                            text = stringResource(id = destination.label),
+                                            fontSize = 12.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        indicatorColor = Color.Transparent, // Clean floating look
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                    )
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
-    ) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            containerColor = MaterialTheme.colorScheme.background
-        ) { innerPadding ->
-            Box(modifier = Modifier.padding(innerPadding)) {
-                when (currentDestination) {
-                    AppDestinations.HOME -> HomeScreen(theme.value)
-                    AppDestinations.TWEAKS -> TweaksScreen(theme.value)
-                    AppDestinations.MORE -> MoreScreen(theme.value)
-                    AppDestinations.SETTINGS -> SettingsScreen(theme = theme, language = language)
-                }
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
+            when (currentDestination) {
+                AppDestinations.HOME -> HomeScreen(theme.value)
+                AppDestinations.TWEAKS -> TweaksScreen(theme.value)
+                AppDestinations.MORE -> MoreScreen(theme.value)
+                AppDestinations.SETTINGS -> SettingsScreen(theme = theme, language = language)
             }
         }
     }
@@ -227,7 +270,7 @@ fun HomeScreen(theme: Theme) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp, horizontal = 56.dp), color = dividerColor)
                         DeviceInfoItem(Icons.Outlined.History, stringResource(id = R.string.rom_version), Build.ID, if (isDark) Color(0xFFB39DDB) else Color(0xFF7E57C2), textColor)
                         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp, horizontal = 56.dp), color = dividerColor)
-                        DeviceInfoItem(Icons.Outlined.Person, stringResource(id = R.string.build_user), Build.USER, if (isDark) Color(0xFF9FA8DA) else Color(0xFF5C6BC0), textColor)
+                        DeviceInfoItem(Icons.Outlined.Fingerprint, stringResource(id = R.string.fingerprint), Build.FINGERPRINT, if (isDark) Color(0xFF9FA8DA) else Color(0xFF5C6BC0), textColor)
                         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp, horizontal = 56.dp), color = dividerColor)
                         DeviceInfoItem(Icons.Outlined.Code, stringResource(id = R.string.kernel_version_label), System.getProperty("os.version") ?: "unknown", if (isDark) Color(0xFFB39DDB) else Color(0xFF9575CD), textColor)
                     }
@@ -250,7 +293,7 @@ fun TweaksScreen(theme: Theme) {
     
     var expanded by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp).padding(bottom = 80.dp)) {
         BrandingTitle()
         Text(stringResource(id = R.string.tweaks), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
         Spacer(modifier = Modifier.height(24.dp))
@@ -316,21 +359,30 @@ fun MoreScreen(theme: Theme) {
     val textColor = if (isDark) Color.White else Color.Black
     val dividerColor = if (isDark) Color.White.copy(alpha = 0.1f) else Color.LightGray.copy(alpha = 0.4f)
     
-    val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-    val batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-    val appsCount = context.packageManager.getInstalledApplications(0).size
+    var uptimeMillis by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+    var deepSleepMillis by remember { mutableLongStateOf(SystemClock.elapsedRealtime() - SystemClock.uptimeMillis()) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            uptimeMillis = SystemClock.elapsedRealtime()
+            deepSleepMillis = SystemClock.elapsedRealtime() - SystemClock.uptimeMillis()
+            delay(1000)
+        }
+    }
     
-    val uptimeMillis = SystemClock.elapsedRealtime()
     val uptime = String.format(Locale.getDefault(), "%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(uptimeMillis),
         TimeUnit.MILLISECONDS.toMinutes(uptimeMillis) % 60,
         TimeUnit.MILLISECONDS.toSeconds(uptimeMillis) % 60)
     
-    val deepSleepMillis = SystemClock.elapsedRealtime() - SystemClock.uptimeMillis()
     val deepSleep = String.format(Locale.getDefault(), "%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(deepSleepMillis),
         TimeUnit.MILLISECONDS.toMinutes(deepSleepMillis) % 60,
         TimeUnit.MILLISECONDS.toSeconds(deepSleepMillis) % 60)
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)) {
+    val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+    val batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+    val appsCount = context.packageManager.getInstalledApplications(0).size
+
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp).padding(bottom = 80.dp)) {
         BrandingTitle()
         Text(stringResource(id = R.string.more), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
         Spacer(modifier = Modifier.height(24.dp))
@@ -389,7 +441,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, theme: MutableState<Theme>, la
     var languageExpanded by remember { mutableStateOf(false) }
     val sharedPref = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
-    Column(modifier = modifier.fillMaxSize().padding(24.dp)) {
+    Column(modifier = modifier.fillMaxSize().padding(24.dp).padding(bottom = 80.dp)) {
         BrandingTitle()
         Text(text = stringResource(id = R.string.settings), fontSize = 32.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp)) {

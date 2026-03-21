@@ -18,7 +18,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -27,7 +26,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -54,7 +52,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.BatteryFull
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Description
@@ -65,9 +62,7 @@ import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Layers
-import androidx.compose.material.icons.outlined.ManageAccounts
 import androidx.compose.material.icons.outlined.Memory
-import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.PlayCircleOutline
 import androidx.compose.material.icons.outlined.RestartAlt
@@ -101,7 +96,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -110,6 +104,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -156,10 +152,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun createLocaleContext(language: String): Context {
     val context = LocalContext.current
-    val locale = Locale(language)
+    val locale = Locale.forLanguageTag(language)
     Locale.setDefault(locale)
-    val configuration = Configuration(context.resources.configuration)
-    configuration.setLocale(locale)
+    val configuration = Configuration(context.resources.configuration).apply {
+        setLocale(locale)
+    }
     return context.createConfigurationContext(configuration)
 }
 
@@ -243,11 +240,11 @@ fun HydrateApp(theme: MutableState<Theme>, language: MutableState<String>, isRoo
                 label = "ScreenTransition"
             ) { targetDestination ->
                 when (targetDestination) {
-                    AppDestinations.HOME -> HomeScreen(theme.value)
-                    AppDestinations.TWEAKS -> TweaksScreen(theme.value)
-                    AppDestinations.MORE -> MoreScreen(theme.value)
+                    AppDestinations.HOME -> HomeScreen()
+                    AppDestinations.TWEAKS -> TweaksScreen()
+                    AppDestinations.MORE -> MoreScreen()
                     AppDestinations.SETTINGS -> SettingsScreen(theme = theme, language = language)
-                    else -> HomeScreen(theme.value)
+                    AppDestinations.REBOOT -> HomeScreen() // Fallback
                 }
             }
         }
@@ -326,12 +323,12 @@ fun RebootDropdownMenu(expanded: Boolean, onDismissRequest: () -> Unit) {
                 .padding(8.dp)
         ) {
             val options = listOf(
-                R.string.reboot_system to "",
-                R.string.reboot_recovery to "recovery",
-                R.string.reboot_bootloader to "bootloader",
-                R.string.reboot_fastboot to "fastboot",
-                R.string.reboot_edl to "edl",
-                R.string.reboot_download to "download"
+                Pair(R.string.reboot_system, ""),
+                Pair(R.string.reboot_recovery, "recovery"),
+                Pair(R.string.reboot_bootloader, "bootloader"),
+                Pair(R.string.reboot_fastboot, "fastboot"),
+                Pair(R.string.reboot_edl, "edl"),
+                Pair(R.string.reboot_download, "download")
             )
             
             options.forEach { (labelRes, command) ->
@@ -359,7 +356,7 @@ private fun rebootDevice(reason: String) {
         val cmd = if (reason.isEmpty()) "reboot" else "reboot $reason"
         Runtime.getRuntime().exec(arrayOf("su", "-c", cmd))
     } catch (e: Exception) {
-        e.printStackTrace()
+        // Handle error
     }
 }
 
@@ -376,7 +373,7 @@ fun BrandingTitle() {
 }
 
 @Composable
-fun HomeScreen(theme: Theme) {
+fun HomeScreen() {
     val scrollState = rememberScrollState()
 
     Column(
@@ -498,7 +495,7 @@ fun HomeScreen(theme: Theme) {
 }
 
 @Composable
-fun TweaksScreen(theme: Theme) {
+fun TweaksScreen() {
     val context = LocalContext.current
     val sharedPref = remember { context.getSharedPreferences("tweaks_prefs", Context.MODE_PRIVATE) }
     
@@ -532,7 +529,7 @@ fun TweaksScreen(theme: Theme) {
                         listOf("performance", "powersave", "msm-adreno-tz", "simple_ondemand").forEach { gov ->
                             DropdownMenuItem(text = { Text(gov, fontWeight = FontWeight.Medium) }, onClick = { 
                                 gpuGovernor = gov
-                                sharedPref.edit().putString("gpu_gov", gov).apply()
+                                sharedPref.edit { putString("gpu_gov", gov) }
                                 expanded = false 
                             })
                         }
@@ -544,11 +541,11 @@ fun TweaksScreen(theme: Theme) {
                 
                 TweakSwitchExpressive(Icons.Outlined.Speed, stringResource(id = R.string.overclock_cpu), cpuOverclock) { 
                     cpuOverclock = it
-                    sharedPref.edit().putBoolean("cpu_oc", it).apply()
+                    sharedPref.edit { putBoolean("cpu_oc", it) }
                 }
                 TweakSwitchExpressive(Icons.Outlined.Speed, stringResource(id = R.string.overclock_gpu), gpuOverclock) {
                     gpuOverclock = it
-                    sharedPref.edit().putBoolean("gpu_oc", it).apply()
+                    sharedPref.edit { putBoolean("gpu_oc", it) }
                 }
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -558,11 +555,11 @@ fun TweaksScreen(theme: Theme) {
                 // ReVanced tweaks with improved layout (Switch below for long text)
                 TweakSwitchTile(Icons.Outlined.PlayCircleOutline, stringResource(id = R.string.revanced_youtube), revancedYoutube) {
                     revancedYoutube = it
-                    sharedPref.edit().putBoolean("revanced_yt", it).apply()
+                    sharedPref.edit { putBoolean("revanced_yt", it) }
                 }
                 TweakSwitchTile(Icons.Outlined.MusicNote, stringResource(id = R.string.revanced_yt_music), revancedYtMusic) {
                     revancedYtMusic = it
-                    sharedPref.edit().putBoolean("revanced_ytm", it).apply()
+                    sharedPref.edit { putBoolean("revanced_ytm", it) }
                 }
             }
         }
@@ -622,7 +619,7 @@ fun TweakSwitchTile(icon: ImageVector, label: String, checked: Boolean, onChecke
 }
 
 @Composable
-fun MoreScreen(theme: Theme) {
+fun MoreScreen() {
     val context = LocalContext.current
     
     var uptimeMillis by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
@@ -732,7 +729,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, theme: MutableState<Theme>, la
                         Theme.entries.forEach { themeValue ->
                             DropdownMenuItem(text = { Text(themeName(themeValue), fontWeight = FontWeight.Medium) }, onClick = { 
                                 theme.value = themeValue
-                                sharedPref.edit().putString("theme", themeValue.name).apply()
+                                sharedPref.edit { putString("theme", themeValue.name) }
                                 themeExpanded = false
                             })
                         }
@@ -755,12 +752,12 @@ fun SettingsScreen(modifier: Modifier = Modifier, theme: MutableState<Theme>, la
                     DropdownMenu(expanded = languageExpanded, onDismissRequest = { languageExpanded = false }) {
                         DropdownMenuItem(text = { Text("English", fontWeight = FontWeight.Medium) }, onClick = { 
                             language.value = "en"
-                            sharedPref.edit().putString("language", "en").apply()
+                            sharedPref.edit { putString("language", "en") }
                             languageExpanded = false
                         })
                         DropdownMenuItem(text = { Text("Tiếng Việt", fontWeight = FontWeight.Medium) }, onClick = { 
                             language.value = "vi"
-                            sharedPref.edit().putString("language", "vi").apply()
+                            sharedPref.edit { putString("language", "vi") }
                             languageExpanded = false
                         })
                     }
@@ -772,7 +769,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, theme: MutableState<Theme>, la
         
         Card(
             modifier = Modifier.fillMaxWidth().clickable { 
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://youtu.be/V61jZBMFjUs?si=mGFYyU4Y8XE1kZ4K"))
+                val intent = Intent(Intent.ACTION_VIEW, "https://youtu.be/V61jZBMFjUs?si=mGFYyU4Y8XE1kZ4K".toUri())
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 context.startActivity(intent)
             }, 
@@ -796,15 +793,6 @@ fun SettingsScreen(modifier: Modifier = Modifier, theme: MutableState<Theme>, la
                 }
             }
         }
-    }
-}
-
-@Composable
-fun isDark(theme: Theme): Boolean {
-    return when (theme) {
-        Theme.LIGHT -> false
-        Theme.DARK -> true
-        Theme.SYSTEM -> isSystemInDarkTheme()
     }
 }
 
@@ -833,6 +821,6 @@ enum class AppDestinations(
 @Composable
 fun HomeScreenPreview() {
     HydrateTheme {
-        HomeScreen(Theme.SYSTEM)
+        HomeScreen()
     }
 }
